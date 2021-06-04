@@ -26,18 +26,40 @@ namespace AdvertApi.Services
 
             using (var client = new AmazonDynamoDBClient())
             {
-                using (var contxt = new DynamoDBContext (client))
+                using (var context = new DynamoDBContext (client))
                 {
-                     await contxt.SaveAsync(advertDBModel);
+                     await context.SaveAsync(advertDBModel);                    
                 }
             }
             return advertDBModel.Id;
 
         }
 
-        public Task<bool> Confirm(ConfirmAdvertModel model)
+        public async Task Confirm(ConfirmAdvertModel model)
         {
-            throw new NotImplementedException();
+
+            using (var client = new AmazonDynamoDBClient())
+            {
+                using (var context = new DynamoDBContext(client))
+                {
+                    var record = await context.LoadAsync<AdvertDBModel>(model.Id);//.SaveAsync(advertDBModel);
+                        if(record == null)
+                    {
+                        throw new KeyNotFoundException($"A record with ID={model.Id} not found");
+                    }
+                        if (model.Status == AdvertStatus.Active)
+                    {
+                        record.Status = AdvertStatus.Active;
+                        await context.SaveAsync(record);
+
+                    }
+                        else
+                    {
+                        await context.DeleteAsync(record);
+                    }
+                }
+            }
+
         }
     }
 }
